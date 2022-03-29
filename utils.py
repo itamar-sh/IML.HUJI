@@ -28,7 +28,7 @@ class AnimationButtons():
                             "mode":"immediate",
                             "fromcurrent": True, "transition": {"duration": transition_duration, "easing": "linear"}}])
     
-    def pause():
+    def pause(self):
         return dict(label="Pause", method="animate", args=
                     [[None], {"frame": {"duration": 0, "redraw": False}, "mode": "immediate", "transition": {"duration": 0}}])
     

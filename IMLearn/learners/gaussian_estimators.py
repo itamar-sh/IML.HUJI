@@ -1,7 +1,10 @@
 from __future__ import annotations
+
+import math
+
 import numpy as np
 from numpy.linalg import inv, det, slogdet
-
+# from utils import *
 
 class UnivariateGaussian:
     """
@@ -51,7 +54,19 @@ class UnivariateGaussian:
         Sets `self.mu_`, `self.var_` attributes according to calculated estimation (where
         estimator is either biased or unbiased). Then sets `self.fitted_` attribute to `True`
         """
-        raise NotImplementedError()
+        m = len(X)
+        temp_sum = 0.0
+        for i in range(m):
+            temp_sum += X[i]
+        self.mu_ = temp_sum / m
+        temp_sum = 0
+        for i in range(m):
+            temp_sum += (X[i]-self.mu_)*(X[i]-self.mu_)
+
+        if self.biased_:
+            self.mu_ = temp_sum / (m)
+        else:
+            self.var_ = temp_sum / (m-1)
 
         self.fitted_ = True
         return self
@@ -76,7 +91,14 @@ class UnivariateGaussian:
         """
         if not self.fitted_:
             raise ValueError("Estimator must first be fitted before calling `pdf` function")
-        raise NotImplementedError()
+        lenX_tup = X.shape
+        lenX = lenX_tup[0]
+        pdfs = np.zeros(shape=(1, lenX))
+        for i in range(lenX):
+            down = (2 * math.pi * self.var_) ** .5
+            up = math.exp(-(((X[i] - self.mu_) ** 2) / (2 * self.var_)))
+            pdfs[0][i] = up / down
+        return pdfs
 
     @staticmethod
     def log_likelihood(mu: float, sigma: float, X: np.ndarray) -> float:
@@ -97,7 +119,17 @@ class UnivariateGaussian:
         log_likelihood: float
             log-likelihood calculated
         """
-        raise NotImplementedError()
+        lenX_tup = X.shape
+        m = lenX_tup[0]
+        pdfs = np.zeros(shape=(1, m))
+        var = sigma * sigma
+        sum = 0
+        for i in range(m):
+            sum += (X[i]-mu)**2
+        sum = -(sum / (2*var))
+        result = -(m/2)*np.log(math.pi*2)-(m/2)*np.log(var)+sum
+        return result
+
 
 
 class MultivariateGaussian:
@@ -143,9 +175,26 @@ class MultivariateGaussian:
         Sets `self.mu_`, `self.cov_` attributes according to calculated estimation.
         Then sets `self.fitted_` attribute to `True`
         """
-        raise NotImplementedError()
-
         self.fitted_ = True
+        len_m = len(X)
+        len_of_each_x = len(X[0])
+
+        mu = np.zeros(shape=(1, len_of_each_x))
+        for i in range(len_of_each_x):
+            temp_sum = 0.0
+            for j in range(len_m):
+                temp_sum += X[j][i]
+            mu[0][i] = temp_sum / len_m
+        self.mu_ = mu
+
+        self.cov_ = np.cov(X, rowvar=False)
+        var = np.zeros((len_of_each_x, len_of_each_x))
+        for i in range(len_of_each_x):
+            for j in range(len_of_each_x):
+                temp_sum = 0.0
+                for k in range(len_m):
+                    temp_sum += (X[k][i] - mu[0][i])*(X[k][j] - mu[0][j])
+                var[i][j] = temp_sum/(len_m - 1)
         return self
 
     def pdf(self, X: np.ndarray):
@@ -168,7 +217,16 @@ class MultivariateGaussian:
         """
         if not self.fitted_:
             raise ValueError("Estimator must first be fitted before calling `pdf` function")
-        raise NotImplementedError()
+        lenX_tup = X.shape
+        lenX = lenX_tup[0]
+        pdfs = np.zeros(shape=(1, lenX))
+        inv_cov = np.linalg.inv(self.cov_)
+        for i in range(lenX):
+            down = (2 * math.pi * np.linalg.det(self.var_)) ** .5
+            diff = (X[i] - self.mu_)
+            up = math.exp(-0.5*((np.dot(np.dot(diff, inv_cov), diff))))
+            pdfs[0][i] = up / down
+        return pdfs
 
     @staticmethod
     def log_likelihood(mu: np.ndarray, cov: np.ndarray, X: np.ndarray) -> float:
@@ -189,4 +247,15 @@ class MultivariateGaussian:
         log_likelihood: float
             log-likelihood calculated
         """
-        raise NotImplementedError()
+        lenX_tup = X.shape
+        m = lenX_tup[0]
+        d = mu.shape[0]
+        cur_sum = 0.0
+        inv_cov = np.linalg.inv(cov)
+        for i in range(m):
+            diff = X[i]-mu
+            cur_sum += np.dot(np.dot(diff, inv_cov), diff)
+        cur_sum = cur_sum * -0.5
+        log = -(d*m)*np.log(2*math.pi) -m/2*np.log(np.linalg.det(cov)) + cur_sum
+        return log
+
