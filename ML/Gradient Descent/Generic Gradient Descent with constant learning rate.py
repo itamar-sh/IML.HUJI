@@ -14,7 +14,8 @@ class GradientDescent_constant_eta:
     def fit(self, f: BaseModule, X: np.ndarray, y: np.ndarray):
         output = []
         for t in range(self.max_iter_):
-            gradient = f.compute_jacobian(X=X, y=y)   # dont necessarily use X, y. It can be constant. so return self.weight
+            # gradient = f.compute_jacobian(X=X, y=y)   # dont necessarily use X, y. It can be constant. so return self.weight
+            gradient = np.sign(f.weights)
             step_val = self.learning_rate_ * gradient
 
             f.weights = f.weights - step_val
@@ -27,4 +28,12 @@ class GradientDescent_constant_eta:
                 break
 
         return np.mean(output, axis=0)  # average case
+
+if __name__ == '__main__':
+    f = BaseModule(np.array([np.sqrt(2), np.e / 3]))
+    gd = GradientDescent_constant_eta(0.1)
+    empty_val = np.empty(0)
+    empty_val2 = np.empty(0)
+    result = gd.fit(f, empty_val, empty_val2)
+    print(result)
 
